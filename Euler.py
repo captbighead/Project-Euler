@@ -1,12 +1,51 @@
+""" Euler
+
+This script is a simple interface to run the solutions I've written for each
+project Euler problem. It runs an infinite loop on the console, taking commands
+in the form of the integer ID of a Project Euler problem, and runs the
+solution I wrote for that problem. The program is terminated with an input of 0.
+
+I imagine that in the future I'll need a wider respository for all the problems,
+but for now (21 solutions written as of this writing) it's not unmanageable to 
+store them all in a single script. 
+
+Since Project Euler problems are solved by submitting single numeric values, the
+solutions below aren't made very generically. I've taken some care to make them
+a little more robust than a brute-force solution to a single problem, but I 
+haven't come across a need to code the problems for generic input... yet :) 
+
+More documentation effort is made for problems that actually gave me trouble, or
+ones where the solution was less straight-forward. If there's less comments on a
+solution, it was a pretty easy/straight-forward one. 
+"""
+
 import io
 import math
 
 def printTitle(title):
+    """ Generic method for formatting and printing a header that looks nice in a 
+        console. 
+
+        The header is a series of '-' characters above, below, and to either
+        side of the message being displayed. 
+
+        Args: 
+            title: The text to surround with dash ('-') characters.
+    """
+
     headerfooter = "-"*(len(title)+6)
     print(f'{headerfooter}\n-- {title} --\n{headerfooter}\n')
 
-solutions = []
+solutions = []  # Stores the solution for each problem as a function to be 
+                # called from the solve() function
+
 def solve(problem):
+    """ Takes a Euler Project problem number and executes the solution. 
+
+    The solution to each problem is coded as a function with the name 'problemN'
+    where N is the problem ID from the Project Euler website's archive. If a 
+    problem hasn't been solved yet, this function will raise an IndexError. 
+    """
     if problem > len(solutions):
         raise IndexError
     printTitle(f"Problem {problem}")
@@ -116,13 +155,25 @@ def problem4():
 solutions.append(problem4)
 
 def problem5():
+    """ To get the smallest number divisible by all numbers n in a set, you 
+        compile all prime factors of the numbers in the set, without including
+        common factors amongst those numbers. 
+
+        IE: Let's say you've added found factors up to 3: [2, 3]. You're going 
+        to add the factors of 4 next. The factors between [2, 3] and [2, 2] have
+        a 2 in common, so we don't add it, and instead get [2, 3, 2]. (Each 
+        occurence counts as a distinct number). Simillarly, when you get to 6, 
+        the sets are [2, 3, 2, 5] and [2, 3]. Since all factors of 6 are already
+        included, you don't add anything here; the number 2*3*2*5 is already
+        divisible by 6. 
+    """
     print("What is the smallest positive number evenly divisible by all of the "
           "numbers from 1 to 20?\n")
 
     factors = [2]
     for i in range(3,21):
         n = i
-        # Every n needs to be composable by the factors within the factors list.
+        # Eliminate common factors by dividing n by every factor that divides it
         composition = factors.copy()
         for c in composition:
             if not n % c:
@@ -141,6 +192,11 @@ def problem5():
 solutions.append(problem5)
 
 def problem6():
+    """ The 'trick' here is that in many (most) languages, ints are bound to a 
+        few bytes. But Python is basically magic, and it takes a hell of a lot 
+        to get it to overflow. This, and many problems to follow, are trivial in
+        python, without any extra consideration. 
+    """
     print("Find the difference between the sum of the squares of the first one "
           "hundred natural numbers and the square of the sum.\n")
 
@@ -334,8 +390,7 @@ def problem11():
     for x in range(len(grid)):
         for y in range(len(grid)):
             # Only one check needed per axis; a sweep of right-facing products
-            # checks all left-facing products in reverse.
-            
+            # definitionally finds all left-facing products (in reverse order)
             
             # Right/Left
             try:
@@ -527,7 +582,7 @@ def problem13():
 
     answer = 0
     for n in nums:
-        answer += n
+        answer += n     # What overflow? Python is maaaaaaagic!
 
     answer = str(answer)
     answer = answer[0:10]
@@ -559,6 +614,9 @@ def problem14():
     print(f"The answer is {answer}\n")
 
 def problem14Alt():
+    """ We can just pretend this doesn't exist... I wanted to make it better,
+        but I decidedly didn't. 
+    """
     print("Find the positive integer less than 1,000,000 that yields the longes"
           "t chain of Collatz Conjecture numbers.\n")
     
@@ -629,8 +687,8 @@ def problem16():
     print("What is the sum of the digits of 2 raised to the 1000th power?\n")
 
     answer = 0
-    num = math.pow(2,1000)
-    num = int(num)
+    num = math.pow(2,1000)  
+    num = int(num)          # Maaaaaaaagic!
     for d in str(num):
         answer += int(d)
     print(f"The answer is {answer}\n")
@@ -757,6 +815,8 @@ def problem19():
                 else:
                     monthlengths[1] = 28
 
+    # I spend way more time formatting the printing of a calendar to console 
+    # than solving the problem. 
     lastDay = (1899, 11, 31, "SUN")
     for d in cal:
 
@@ -782,8 +842,8 @@ def problem20():
     print("What is the sum of the digits of 100!?\n")
     answer = 0
     n = 1
-    for i in range(1,101):
-        n *= i
+    for i in range(1,101):  
+        n *= i              # MAGIC!!!
     n = str(n)
     for d in n:
         answer += int(d)
