@@ -22,6 +22,141 @@ solution, it was a pretty easy/straight-forward one.
 import io
 import math
 
+class EulerUtils:
+    """ A repository for functions that keep coming up. 
+    """
+
+    def __init__(self):
+        # Initialize our listing of all of our known prime numbers. 
+        self.primes = {}
+        self.primesFile = open("Primes.txt", "r+")
+        self.greatestPrimacyCheck = 2
+        self.greatestPrime = 2
+        for line in self.primesFile:
+            self.primes[int(line)] = True
+            self.greatestPrimacyCheck = max(self.greatestPrimacyCheck,int(line))
+
+    def divides(self, x, y):
+        """Checks if a number x divides a second number, y. 
+
+            Just a utility. "not y % x" is less imminently readable than 
+            "divides(x, y)"
+        """
+        return not y % x
+
+    def isPrime(self, n):
+        """Checks if a number is prime using heuristics and dynamic programming
+
+            The basic methodology to identify primes is to check if it takes the
+            form of a prime number, allowing us to exclude all n that don't, and
+            then for the n that do, we test it by iterating over the list of all
+            prime numbers below it(s square root) to see if any of them divide 
+            it. 
+
+            To that end, I've been storing the list of numbers we've determined
+            are prime and for each new problem, I've iterated up through all the
+            numbers less than n. Since that's how we've been doing it from 
+            scratch in each problem, it's time to start storing them for use in
+            future problems (in a text file). 
+
+            Args:
+                n: The number to determine the primacy of. 
+        """
+
+        if n < self.greatestPrimacyCheck:   # Implication: We already know 
+            return self.primes.get(n, False)
+
+        # We can't check n if we haven't checked all the numbers up to it. So if
+        # n isn't the next highest number after our greatest check, we need to
+        # check that next highest number until it is.  
+        while self.greatestPrimacyCheck + 1 < n:
+            self.isPrime(self.greatestPrimacyCheck+1)
+        
+        self.greatestPrimacyCheck = max(self.greatestPrimacyCheck, n)
+
+        # Check if it takes the form of a prime:
+        if self.divides(2, n) or self.divides(3, n) or \
+                (not self.divides(6, n-1) and not self.divides(6, n+1)):
+            return False
+
+        # Now we know that it *could* be prime. Verify by seeing if any prime
+        # less than its root divide it (or if its root is a whole number) 
+        rootN = int(math.sqrt(n))
+        if rootN == math.sqrt(n): 
+            return False
+        for p in self.primes.keys():
+            if p > rootN:
+                continue
+            if self.divides(p, n):
+                return False
+
+        # Finally, if we've made it here, we *are* prime! And what's more, we 
+        # didn't know that before, but we'll always know it from now on. 
+        self.greatestPrime = max(self.greatestPrime, n)
+        self.primesFile.seek(0, 2)  # Go to the end of the file
+        self.primesFile.write(f"{n}\n")
+        self.primesFile.flush()
+        self.primes[n] = True
+        return True
+       
+    def properDivisors(self, n):
+        """ Returns a list of the proper divisors of n.
+
+            A 'Proper Divisor' of n is any divisor of n that is less than itself
+
+            Args:
+                n: The number to find the proper divisors for. 
+        """
+        
+        pd = [] # The list we're going to return.
+
+        # Edge cases: 1 is the only natural number that has no proper divisors, 
+        # because although every number has 1 as a divisor, 1 is the only one 
+        # where 1 is not less than it. 4 can't search from 2 to its root 
+        # (excluded) because 2 is it's root. 2 and 3 are fine, but if I'm hard-
+        # coding 1 and 4, why not do 2 and 3? 
+        if n == 1: 
+            return pd
+        elif n == 2 or n == 3: 
+            return [1]
+        elif n == 4: 
+            return [1,2]
+
+        # Grab the root; any divisor greater than the root is the quotient of n
+        # and an earlier divisor already found
+        root = int(math.sqrt(n))
+        isSquare = root == math.sqrt(n)
+
+
+        # Iterate from 2 to the root, finding all divisors up to that point.
+        # We want to check up to the last whole number before the root. In cases
+        # where the root is not a whole number, the integer casting of that root
+        # is the last number we want to check, so we need to add 1 to it. But
+        # when the integer casting is the same as the root (IE: if n is a 
+        # perfect square), we can use it as the bound in the range function.
+        for d in range(2,root + (1 if not isSquare else 0)):
+            if self.divides(d, n):
+                pd.append(d)
+
+        # Find the complements of the divisors we found through iteration:
+        for d in pd.copy():
+            pd.append(n // d)
+
+        # Now add 1 (we hadn't until this point because 1's complement is n, 
+        # which is not a proper divisor) and the root (we also omitted this 
+        # because it's its own complement, and we only want to include it once)
+        pd.append(1)
+        if isSquare: 
+            pd.append(root)
+
+        return pd
+
+
+
+
+
+eu = EulerUtils()         
+
 def printTitle(title):
     """ Generic method for formatting and printing a header that looks nice in a 
         console. 
@@ -732,6 +867,8 @@ def problem17():
 solutions.append(problem17)
 
 def problem18():
+    # I entered the triangle upside-down here, because that's how I intended to
+    # traverse it :) 
     triangle = [
         [ 4, 62, 98, 27, 23,  9, 70, 98, 73, 93, 38, 53, 60,  4, 23],
         [63, 66,  4, 68, 89, 53, 67, 30, 73, 16, 69, 87, 40, 31],
@@ -894,6 +1031,196 @@ def problem21():
 
     print(f"The answer is {answer}\n")
 solutions.append(problem21)
+
+def problem22():
+    print("What is the sum of all name scores (position in list * sum of each l"
+          "etter's position in the alphabet) for the names in the given list?\n"
+          )
+    answer = 0
+    
+    # Input in the form of a file: 
+    names = []
+    with open("p022_names.txt") as f:
+        for line in f:
+            names = line.replace("\"","").split(",")
+    names.sort()
+
+    # Create Translation for letters to their score (1-indexed position in the 
+    # english alphabet)
+    lScoreOffset = 1 - ord("A")
+    def letterScore(letter):
+        return ord(letter) + lScoreOffset
+    def wordScore(index, word):
+        s = 0
+        for l in word:
+            s += letterScore(l)
+        return s * index
+
+    for i in range(len(names)):
+        answer += wordScore(i+1, names[i])
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem22)
+
+def problem23():
+    print("Find the sum of all the positive integers which cannot be written as"
+          " the sum of two abundant numbers.\n")
+    # An abundant number n is one in which the sum of its proper divisors is 
+    # greater than n. All numbers greater than 28123 can be written as the sum 
+    # of two abundant numbers. The greatest number than cannot be expressed as 
+    # the sum of two abundant numbers is less than that; but not provided, and 
+    # it weirdly can't be proven that the numbers between it and 28123 are all
+    # able to be expressed as the sum of two abundant numbers. 
+
+    # Find out if each number up to 28123 is abundant.
+    abundants = {}
+    for i in range(1, 28124):
+        s = sum(eu.properDivisors(i))
+        if s > i:
+            abundants[i] = True
+
+    answer = 0
+
+    # Try each n, and for all abundant number a < n, see if (n-a) is abundant
+    for n in range(1, 28124):
+        foundA = False
+        for a in abundants.keys():
+            if a >= n:
+                continue
+            if abundants.get(n-a, False):
+                foundA = True
+                break
+        answer += n if not foundA else 0
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem23)
+
+def problem24():
+    print("What is the 1,000,000th lexicographic permutation of [0-9]?\n")
+
+    def permutations(original):
+        """ Generates all permutations of a string
+
+            If in some kind of ordering, the final list of returned permutations
+            will be in that same ordering as well. (IE: If you give it a word in
+            alphabetical order, the resultant list of permutations will be 
+            sorted in that same order as a consequence of the generation algo.
+
+            Args:
+                original: The string to create permutations for. 
+        """
+
+        def secretRecursion(orig, used, final):
+            """ The actual method. It was dumb to elevate the used/final fields
+                needed for the recursion/referencing, since in all cases the 
+                base call is supposed to set those as empty lists. 
+            """
+            if len(used) == len(orig):
+                final.append("".join(used))
+                return
+            
+            select = orig.copy()
+            for val in used:
+                select.remove(val)
+
+            for val in select:
+                newUsed = used.copy()
+                newUsed.append(val)
+                secretRecursion(orig, newUsed, final)
+
+        stringAsList = []
+        for c in original:
+            stringAsList.append(c)
+
+        permsList = []
+        secretRecursion(stringAsList, [], permsList)
+        return permsList
+
+    answer = permutations("0123456789")[999999]
+    print(f"The answer is {answer}\n")
+solutions.append(problem24)
+
+def problem25():
+    print("At which index is the first Fibonacci number to contain 1000 digits?"
+          "\n")
+
+    # I mean, we can just do the naive approach, because python is magic, right?
+    
+    # Time travel notes: I called this the 'naive' approach, because I 
+    # remembered there being a trick to problems like this. But then I solved it
+    # with dynamic programming, which I've been doing over and over, and which 
+    # *was* the trick. 
+
+    # Technically still magic, because 1000 digit ints are insane, actually. But
+    # still. 
+    fibonacciNumbers = {1:1, 2:1}
+    def fibonacci(index):
+        if fibonacciNumbers.get(index-1, -1) == -1:
+            fibonacciNumbers[index-1] = fibonacci(index-1)
+        return fibonacciNumbers[index - 1] + fibonacciNumbers[index - 2]
+
+    answer = 3
+    while len(str(fibonacci(answer))) < 1000:
+        print(str(fibonacci(answer)))
+        answer += 1
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem25)
+
+def problem26():
+    print("What is the value of d < 1000 for which 1/d contains the longest rec"
+          "urring cycle in its decimal fraction part?\n")
+    # Quick refresher for my own edification: "Rational numbers" are the ones 
+    # that eventually repeat. One of the definitions of rational numbers is that
+    # they can be written as the quotient of two integers, so definitionally, 
+    # this problem *isn't* trying to account for infinitely non-repeating 
+    # numbers. 
+
+    # Okay. Let's do this like I did it in elementary school!
+    answer = 0
+    maxPeriod = 0
+    for d in range(1,1000):
+        # Find a big enough number that you *can* divide into at least once.
+        numerator = 10
+        while d >= numerator:
+            numerator *= 10
+
+        # Remember every numerator you use, starting with this first one you 
+        # just made. 
+        numHistory = [numerator]
+        unsure = True   # We're "unsure" if this is a cycle or not. 
+        while unsure:
+            # Get the result an remainder. 
+            remainder = numerator % d
+            
+            # If there is no remainder, there's no cycle. We're just done. 
+            if not d:
+                sure = True
+            else:
+                numerator = remainder * numHistory[0]
+                
+                # This is how we know if we're in a cycle. If we are, we check
+                # if it's a longer-period cycle than any we've found already and
+                # maintain the record of the longest. 
+                if numerator in numHistory:
+                    unsure = False
+                    period = len(numHistory) - numHistory.index(numerator)
+                    maxPeriod = max(maxPeriod, period)    
+                    answer = d if maxPeriod == period else answer
+                else:
+                    numHistory.append(numerator)
+
+    floatAnswer = 1/answer
+    print(f"The answer is {answer}, which caused a cycle of length {maxPeriod}."
+          f" Check it out!\n1/{answer} = {floatAnswer}\n")
+solutions.append(problem26)
+
+def problem27():
+    print("Problem Statement Goes Here\n")
+    answer = 0
+    print(f"The answer is {answer}\n")
+solutions.append(problem27)
+
 
 #def problemX():
 #    print("Problem Statement Goes Here\n")
