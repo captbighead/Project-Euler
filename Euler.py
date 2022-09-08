@@ -151,6 +151,44 @@ class EulerUtils:
 
         return pd
 
+    def permutations(self, original):
+        """ Generates all permutations of a string
+
+            If in some kind of ordering, the final list of returned permutations
+            will be in that same ordering as well. (IE: If you give it a word in
+            alphabetical order, the resultant list of permutations will be 
+            sorted in that same order as a consequence of the generation algo.
+
+            Args:
+                original: The string to create permutations for. 
+        """
+
+        def secretRecursion(orig, used, final):
+            """ The actual method. It was dumb to elevate the used/final fields
+                needed for the recursion/referencing, since in all cases the 
+                base call is supposed to set those as empty lists. 
+            """
+            if len(used) == len(orig):
+                final.append("".join(used))
+                return
+            
+            select = orig.copy()
+            for val in used:
+                select.remove(val)
+
+            for val in select:
+                newUsed = used.copy()
+                newUsed.append(val)
+                secretRecursion(orig, newUsed, final)
+
+        stringAsList = []
+        for c in original:
+            stringAsList.append(c)
+
+        permsList = []
+        secretRecursion(stringAsList, [], permsList)
+        return permsList
+
 
 
 
@@ -1216,11 +1254,258 @@ def problem26():
 solutions.append(problem26)
 
 def problem27():
-    print("Problem Statement Goes Here\n")
+    print("Find the product of the coefficients a and b such that n^2 + an + b "
+          "(where |a| < 1000, and |b| <= 1000) that produces the maximum number"
+          "of primes for consecutive values of n, starting with n = 0. \n")
+    
+    checked = {}
     answer = 0
+    answerPrimes = 0
+    for a in range(1000):
+        for b in range(a, 1001):    # We've checked all numbers lower already
+            
+            n0 = 0
+            while eu.isPrime(n0 * n0 + a * n0 + b):
+                n0 += 1
+            n1 = 0
+            while eu.isPrime(n1 * n1 + a * n1 - b):
+                n1 += 1
+            n2 = 0
+            while eu.isPrime(n2 * n2 - a * n2 + b):
+                n2 += 1
+            n3 = 0
+            while eu.isPrime(n3 * n3 - a * n3 - b):
+                n3 += 1
+
+            if n0 > answerPrimes:
+                answerPrimes = n0
+                answer = a * b
+                print(f"{answer}: {a} and {b} produced {answerPrimes} primes.")
+            elif n1 > answerPrimes:
+                answerPrimes = n1
+                answer = a * (-b)
+                print(f"{answer}: {a} and -{b} produced {answerPrimes} primes.")
+            elif n2 > answerPrimes:
+                answerPrimes = n2
+                answer = (-a) * b
+                print(f"{answer}: -{a} and {b} produced {answerPrimes} primes.")
+            elif n3 > answerPrimes:
+                answerPrimes = n3
+                answer = (-a) * (-b)
+                print(f"{answer}: -{a} and -{b} produced {answerPrimes} primes.")
+    
     print(f"The answer is {answer}\n")
 solutions.append(problem27)
 
+
+def problem28():
+    print("What is the sum of the numbers on the diagonals in a 1001x1001 spira"
+          "l, starting from 1 and moving right in a clockwise fashion?\n")
+    
+    # Looks like the pattern is: Start from 1. Then add the first even number 
+    # (2) 4 times, taking each number and adding it to the sum. Then add the 
+    # second even number (4) 4 times and adding it to the sum. And so on, until 
+    # the square is finished. 
+
+    sides = 1001
+    diagonals = [1]
+    n = 2
+    while(diagonals[-1] != sides * sides):
+        for i in range(4):
+            diagonals.append(diagonals[-1] + n)
+        n += 2
+    answer = sum(diagonals)
+    print(f"The answer is {answer}\n")
+solutions.append(problem28)
+
+
+def problem29():
+    print("How many distinct terms exist in a sequence generated from all integ"
+          "er combinations a^b for 2 <=  a, b <= 100?\n")
+    
+    answer = 0
+    terms = {}                  # Hashing means we won't get dupes. Do it naive
+    for a in range(2, 101):
+        for b in range(2, 101):
+            terms[a ** b] = 1
+            terms[b ** a] = 1
+    answer = len(terms.keys())
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem29)
+
+
+def problem30():
+    print("Find the sum of all the numbers that can be written as the sum of th"
+          "e fifth powers of their digits.\n")
+
+    # Okay. So. There are only 3 numbers that can be written as the sum of 
+    # fourth powers of their digits: 1634, 8208, 9474. 
+    # 
+    # Why is that the case? Are the other combinations of the fourth powers of 
+    # digits too big? 
+    # 
+    # for i in range(10):
+    #     p = i ** 4
+    #     print(f"{i}^4 = {p}")
+    # 
+    # The digits raised to 4th powers are: 
+    # 
+    # 0 - 0
+    # 1 - 1
+    # 2 - 16
+    # 3 - 81
+    # 4 - 256
+    # 5 - 625
+    # 6 - 1296
+    # 7 - 2401
+    # 8 - 4096
+    # 9 - 6561
+    #
+    # In order for a number with a 9 in it to be considered, it must be larger
+    # than 6461.
+    # 
+    # The numbers have to be larger than single digit numbers.  
+
+    # Doing the same for fifth powers: 
+    # 
+    # 0^5 = 0
+    # 1^5 = 1
+    # 2^5 = 32
+    # 3^5 = 243
+    # 4^5 = 1024
+    # 5^5 = 3125
+    # 6^5 = 7776
+    # 7^5 = 16807
+    # 8^5 = 32768
+    # 9^5 = 59049
+    # 
+    # If we had a number 999,999 the sum would be 354,294, so we'd have 
+    # overshot. So there's a soft limit... 
+    
+    # Give us a lookup by digit:
+    lookup = {}
+    for i in range(10):
+        lookup[i] = i ** 5
+        
+    # Brute Force it:
+    answer = 0
+    for n in range(2,354295):
+        sn = str(n)          
+        sum = 0
+        for digit in sn:
+            i = int(digit)
+            sum += lookup[i]
+        if sum == n:
+            answer += sum
+    
+    print(f"The answer is {answer}\n")
+    #... I'm not proud of this one. 
+solutions.append(problem30)
+
+
+def problem31():
+    print("How many ways can you make 2 dollars with any number of the followin"
+          "g coins: $2, $1, $0.5, $0.2, $0.1, $0.05, $0.02, $0.01\n")
+    
+    knowns = {}
+    dontchecks = {}
+
+    def setValue(set):
+        return set[0] + set[1] * 2 + set[2] * 5 + set[3] * 10 + set[4] * 20 + \
+            set[5] * 50 + set[6] * 100 + set[7] * 200
+
+    def findSets(s):
+        # Base cases: we've been here before, or it is 200. 
+        if dontchecks.get(s, False):
+            return
+        elif setValue(s) == 200:
+            knowns[s] = True
+            dontchecks[s] = True
+            return
+        elif setValue(s) > 200: # Technically, we "don't need to check" this one
+            return              # again either, but it's also just a stop point. 
+
+        # If we get here, we haven't been here before, and it's not 200. Don't 
+        # come back:
+        dontchecks[s] = True
+
+        # If we get here, we are less than 200. Let's search every version of 
+        # ourself with one more of each coin, and then we're done. 
+        findSets((s[0]+1, s[1], s[2], s[3], s[4], s[5], s[6], s[7]))
+        findSets((s[0], s[1]+1, s[2], s[3], s[4], s[5], s[6], s[7]))
+        findSets((s[0], s[1], s[2]+1, s[3], s[4], s[5], s[6], s[7]))
+        findSets((s[0], s[1], s[2], s[3]+1, s[4], s[5], s[6], s[7]))
+        findSets((s[0], s[1], s[2], s[3], s[4]+1, s[5], s[6], s[7]))
+        findSets((s[0], s[1], s[2], s[3], s[4], s[5]+1, s[6], s[7]))
+        findSets((s[0], s[1], s[2], s[3], s[4], s[5], s[6]+1, s[7]))
+        findSets((s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7]+1))
+        return
+
+    nocoinset = (0, 0,  0,  0,  0, 0, 0, 0)
+    findSets(nocoinset)
+    answer = len(knowns.keys())
+    print(f"The answer is {answer}\n")
+solutions.append(problem31)
+
+def problem32():
+    print("Find the sum of all products whose multiplicand/multiplier/product i"
+          "dentity can be written as 1 through 9 pandigital.\n")
+
+    # Some reasoning: 
+    # 
+    # No multiplicand can be 1, as the multiplier would be equal to the product,
+    # resulting in double use of the numbers. 
+    # 
+    # No zeroes appear in any of the problem statement; I'm confidently assuming
+    # they won't be incorporated in any of the results. 
+    # 
+    # The largest pandigital 1 through 9 number is 987654321
+    #
+    # We have 8 spaces that partition a set of 9 numbers such that you have 
+    # at least one digit on either side of the partition:
+    # 
+    # 9_8_7_6_5_4_3_2_1
+    # 
+    # We want to choose 2 non-adjacent partitions.
+    partitions = []
+    for i in range(8):
+        for j in range(i+2, 8):
+            partitions.append((i,j))
+            p = len(partitions)
+
+    # Next we want to apply those partitions to each permutation of 987654321. 
+    # We'll revisit the function we made in problem 24. I've copied it into 
+    # EulerUils:
+    permutations = eu.permutations("987654321")
+
+    # After we have all permutations of 987654321, and all of the indices we 
+    # need to partition them into sets of three numbers each with at least one 
+    # digit, we can validate those that are actual multiplicand/multiplier/
+    # product identities. If we store them in a dictionary where the key is the
+    # product, then we won't get those duplicate pairings we were warned about
+    # in the question description; we'll overwrite them instead. Since we just
+    # want to sum the products, this is fine. 
+    #
+    # Side note, this is probably one of the more inefficient ways of doing this
+    # given that there turns out to be 7 identities and we are searching 21 * 
+    # ~380,000 permutations. But (if you're not debugging,) it's quick enough.
+    pandigitalIdentities = {}
+    for perm in permutations:
+        for part in partitions:
+
+            # messy substring carving, but essentailly the positons in the 
+            # partitions are one less than their index within the string. 
+            multiplicand = int(perm[0:part[0]+1])
+            multiplier = int(perm[part[0]+1:part[1]+1])
+            product = int(perm[part[1]+1:])
+            
+            if multiplicand * multiplier == product:
+                pandigitalIdentities[product] = (multiplicand, multiplier)
+
+    answer = sum(pandigitalIdentities.keys())
+    print(f"The answer is {answer}\n")
+solutions.append(problem32)
 
 #def problemX():
 #    print("Problem Statement Goes Here\n")
