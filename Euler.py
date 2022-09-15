@@ -30,11 +30,12 @@ class EulerUtils:
         # Initialize our listing of all of our known prime numbers. 
         self.primes = {}
         self.primesFile = open("Primes.txt", "r+")
-        self.greatestPrimacyCheck = 2
         self.greatestPrime = 2
         for line in self.primesFile:
             self.primes[int(line)] = True
-            self.greatestPrimacyCheck = max(self.greatestPrimacyCheck,int(line))
+            self.greatestPrime = max(self.greatestPrime, int(line))
+        self.primesList = list(self.primes.keys())
+        self.primesList.sort()
 
     def divides(self, x, y):
         """Checks if a number x divides a second number, y. 
@@ -42,7 +43,7 @@ class EulerUtils:
             Just a utility. "not y % x" is less imminently readable than 
             "divides(x, y)"
         """
-        return not y % x
+        return x == y or not y % x
 
     def isPrime(self, n):
         """Checks if a number is prime using heuristics and dynamic programming
@@ -63,42 +64,20 @@ class EulerUtils:
                 n: The number to determine the primacy of. 
         """
 
-        if n < self.greatestPrimacyCheck:   # Implication: We already know 
-            return self.primes.get(n, False)
-
-        # We can't check n if we haven't checked all the numbers up to it. So if
-        # n isn't the next highest number after our greatest check, we need to
-        # check that next highest number until it is.  
-        while self.greatestPrimacyCheck + 1 < n:
-            self.isPrime(self.greatestPrimacyCheck+1)
-        
-        self.greatestPrimacyCheck = max(self.greatestPrimacyCheck, n)
-
-        # Check if it takes the form of a prime:
-        if self.divides(2, n) or self.divides(3, n) or \
-                (not self.divides(6, n-1) and not self.divides(6, n+1)):
+        if n == 0 or n == 1:
             return False
 
-        # Now we know that it *could* be prime. Verify by seeing if any prime
-        # less than its root divide it (or if its root is a whole number) 
-        rootN = int(math.sqrt(n))
-        if rootN == math.sqrt(n): 
-            return False
-        for p in self.primes.keys():
-            if p > rootN:
-                continue
+        if self.primes.get(n, False):
+            return self.primes[n]
+
+        for p in self.primesList:
+            if p > int(math.sqrt(n)+1):
+                break
             if self.divides(p, n):
                 return False
-
-        # Finally, if we've made it here, we *are* prime! And what's more, we 
-        # didn't know that before, but we'll always know it from now on. 
-        self.greatestPrime = max(self.greatestPrime, n)
-        self.primesFile.seek(0, 2)  # Go to the end of the file
-        self.primesFile.write(f"{n}\n")
-        self.primesFile.flush()
-        self.primes[n] = True
         return True
        
+
     def properDivisors(self, n):
         """ Returns a list of the proper divisors of n.
 
@@ -1448,6 +1427,7 @@ def problem31():
     print(f"The answer is {answer}\n")
 solutions.append(problem31)
 
+
 def problem32():
     print("Find the sum of all products whose multiplicand/multiplier/product i"
           "dentity can be written as 1 through 9 pandigital.\n")
@@ -1506,6 +1486,598 @@ def problem32():
     answer = sum(pandigitalIdentities.keys())
     print(f"The answer is {answer}\n")
 solutions.append(problem32)
+
+
+def problem33():
+    print("Find the value of the denominator of the product of the four 'curiou"
+          "s fractions' given in its lowest common terms\nThe four curious frac"
+          "tions are those that are less than 1 in value, consisting of two-dig"
+          "it numbers in the numerator and denominator, that can be accurately "
+          "reduced by incorrectly cancelling out a digit that appears in both. "
+          "49/98, for instance, reduces to 4/8, but not because you can cancel "
+          "out the nines. To get the answer, find the other 3. \n")
+
+    digits = [1,2,3,4,5,6,7,8,9]    # 0 cases are trivial
+    for i in range(10,100):
+        for j in range(i+1,100):
+            for d in digits:
+                sd = str(d)
+                si = str(i)
+                sj = str(j)
+                if si.find(sd) != -1 and sj.find(sd) != -1:
+                    si = si.replace(sd, "", 1)
+                    sj = sj.replace(sd, "", 1)
+
+                    ii = int(si)
+                    ij = int(sj)
+                    if ij == 0:
+                        continue
+
+                    x = max(ii/ij, i/j)
+                    n = min(ii/ij, i/j)
+                    if x - n < 0.00000001 and x < 1:
+                        print(f"{i}/{j} = {si}/{sj}")
+            
+            
+    # Since it's 4 items, and I don't want to find a generic solution for 
+    # simplifying fractions:
+    print("\nThe product is 8/800, or 1/100.\n\nErgo, the answer is 100.")
+solutions.append(problem33)
+
+
+def problem34():
+    print("Find the sum of all numbers which are equal to the sum of the factor"
+          "ial of their digits.\n")
+
+    # I hate these. 
+    # 
+    # So we'll start by figuring out the terms we'll be summing.
+    factorialLookup = {0:1}
+    for i in range(1,10):
+        f = 1
+        for n in range(i, 1, -1):
+            f *= n
+        factorialLookup[i] = f
+        print(f"{i}! = {f}")
+
+    # So any number that qualifies that has a 9 within it has to be larger than
+    # 362880. A six-digit number consisting only of 9s would have a sum higher 
+    # than 2 million, so it's safe to say that all of the numbers that have this
+    # property have 6 or fewer digits at most... right? 
+    answer = 0
+    for i in range(3, 999999):  # skip 2, 1.
+        si = str(i)
+        f = 0
+        for d in si:
+            f += factorialLookup[int(d)]
+        if f == i:
+            answer += i
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem34)
+
+def problem35():
+    print("How many circular primes are there below one million?\n")
+
+    print(eu.isPrime(1000000))
+
+    print(eu.isPrime(5))
+    print(eu.isPrime(7))
+
+    answer = 0
+    for p in eu.primes.keys():
+        if p >= 100:
+            continue
+
+        sp = str(p)
+        iupg = True
+        for i in range(len(sp)):
+            spv = sp[i:] + sp[0:i]
+            if not eu.isPrime(int(spv)):
+                iupg = False
+        if iupg:
+            print(f"{sp} is a circular prime.")
+            answer += 1
+
+
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem35)
+
+def problem36():
+    print("Find the sum of all numbers less than one million which are palindro"
+          "mic in both base 10 and base 2.\n")
+
+    # The stipulation that in either base, the number may not include leading 
+    # zeroes means that it cannot be divisible by 10 or by 2. So we can narrow
+    # our search off of that. 
+
+    def binary(n):
+
+        if not n: return "0"
+
+        wipn = n
+        bstr = ""
+        for exp in range(19,-1,-1): # All nums less than 1m are less than 2^20
+            if wipn >= 2 ** exp:    # If n >= 2^exp, then it includes that digit
+                bstr += "1"
+                wipn -= 2 ** exp
+            elif wipn == n:         # If it isn't bigger, AND we haven't done 
+                bstr += ""          # anything to it yet, then this is leading 0
+            else:
+                bstr += "0"
+        return bstr
+
+    def pallindromic(s):
+        halfLen = len(s) // 2
+        for i in range(halfLen):
+            complement = (-1 * i) - 1
+            if s[i] != s[complement]:
+                return False
+        return True
+
+    answer = 0
+    for i in range(1, 1000000, 2):  # No even number is pallindromic in binary. 
+        if pallindromic(str(i)) and pallindromic(binary(i)):
+            print(f"{i} and {binary(i)} are both pallindromic.")
+            answer += i
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem36)
+
+def problem37():
+    print("Find the sum of the 11 primes that are truncatable from left to righ"
+          "t and vice versa. \n")
+    
+    def check(p, dir):
+
+        if p <= 7: return False
+
+        sp = str(p)
+        start = 1 if not dir else -1
+        end = len(sp) if not dir else -1 * len(sp)
+        step = 1 if not dir else -1
+        for i in range(start, end, step):
+            spt = sp[i:] if not dir else sp[:i]
+            if not eu.isPrime(int(spt)):
+                return False
+        return True
+
+    answer = 0
+    counter = 0
+    for p in eu.primes.keys():
+        answer += p if check(p, 0) and check(p,1) else 0
+        if check(p, 0) and check(p,1):
+            counter += 1
+            print(f"{counter}:\t{p} is one of the primes.")
+                
+    print(f"The answer is {answer}\n")
+solutions.append(problem37)
+
+def problem38():
+    print("What is the largest pandigital 9-digit number that can be formed as "
+          "the concatenated product of an integer with (1, 2, ..., n) where n >"
+          " 1?\n")
+
+    def isPandigital(n):
+        sn = str(n)
+        digits = [1,2,3,4,5,6,7,8,9]
+
+        if len(sn) != len(digits):
+            return False
+
+        for d in digits:
+            sd = sn.replace(str(d), "")
+            if len(sd) != len(sn) - 1:
+                return False
+        return True
+
+    # Since the number is 9 digits long, and the multiplication will give us n
+    # terms of at least 1 digit, our largest theoretical tuple is where n = 9. 
+    # That one can only be multiplied by 1 to get us the pandigital 123456789, 
+    # and we know that the example case is larger than that. So n is at most 8
+    # (put it's probably lower). 
+    #
+    # We also know that the smallest tuple is (1, 2) (or maybe (1, 2, 3)?). 
+    # 
+    # Because the first number is always 1, we know that the first l digits will
+    # consist of the digits of the integer (whose length is l). We also know 
+    # that none of the digits in the tuple is greater than 9, meaning that we 
+    # can't produce a product with any one multiplication larger than a number 
+    # with length l + 1. 
+    #
+    # So I think that means that the largest the integer can be is 4 digits. 
+    # The smallest tuple we can multiply by consists of 2 numbers, and one of 
+    # the products will always produce a l digit number. Since the final product
+    # will have 9 digits, and it has to be the concatenation of two numbers, it
+    # will have to be produced by a 4 digit integer i where 2i is a 5 digit 
+    # number.
+    #
+    # We could theoretically reign in this scope a bit more by carrying on that
+    # train of thought (IE: in order for n to be 8, then the integer would have 
+    # to be such that only multiplying it by 8 would get you a two digit number,
+    # which is probably impossible, and probably excludes that case), ~10,000 *
+    # the 7 possible tuples  is easily searched in brute force. 
+    tuples = [(1, 2), (1, 2, 3), (1, 2, 3, 4), (1, 2, 3, 4, 5), 
+              (1, 2, 3, 4, 5, 6), (1, 2, 3, 4, 5, 6, 7), 
+              (1, 2, 3, 4, 5, 6, 7, 8)
+              ]
+
+    answer = 0
+    generator = []
+    for t in tuples:
+        for i in range(10000):
+            result = ""
+            for n in t:
+                result += str(n*i)
+            if isPandigital(int(result)):
+                answer = max(answer, int(result))
+                if answer == int(result):
+                    generator = [i, t]
+
+    print(f"The answer is {answer}\nIt was generated by: {generator[0]} - "
+          f"{generator[1]}")
+solutions.append(problem38)
+
+def problem39():
+    print("For which permieter value p <= 1000 are there the most possible righ"
+          "t angle triangles with integral side lengths [a, b, c] such that a +"
+          " b + c = p?\n")
+
+    def generateTriplets(p):
+        triplets = {}
+        for i in range(1, p-1):
+            for j in range(1, ((p-i)//2+1)):
+                triplet = [i, j, p-i-j]
+                triplet.sort()
+                triplets[triplet[0],triplet[1],triplet[2]] = True
+        retList = []
+        for t in triplets:
+            retList.append(t)
+        return retList
+     
+    maxTriplets = 0
+    answer = 0
+    for i in range(3,1001):
+        triplets = generateTriplets(i)
+        for t in triplets.copy():
+            if t[0] ** 2 + t[1] ** 2 != t[2] ** 2:
+                triplets.remove(t)
+        if len(triplets) > maxTriplets:
+            maxTriplets = len(triplets)
+            answer = i
+
+    print(f"The answer is {answer}, with {maxTriplets} solutions.\n")
+solutions.append(problem39)
+
+def problem40():
+    print("The irrational decimal fraction IDF is created by concatenating the "
+          "positive integers from 1 to infinity. If dn is the nth digit of IDF,"
+          "what is the value of the product d1 * d10 * d100 * d1000 * d10000 * "
+          "d100000 * d1000000?\n")
+    answer = 0
+
+    # So the first nine digits d1 through d9 are equal to n. 
+    #
+    # Then the next 20 digits alternate between 1, and the next digit. The 20 
+    # after that alternate between 2, and the next digit. And so on until the 
+    # 9 + 20 + 20 + 20 + 20 + 20 + 20 + 20 + 20 + 20 + 1 = 191st digit. 
+
+    # ... sanity check: Python is magic right? 
+    string = "1"
+    i = 2
+    while(len(string) < 1000000):
+        string += str(i)
+        i += 1
+    answer = int(string[0]) * int(string[9]) * int(string[99]) * \
+        int(string[999]) * int(string[9999]) * int(string[99999]) * \
+        int(string[999999])
+    print(f"The answer is {answer}\n")
+    # Yup. Python is magic. 
+solutions.append(problem40)
+
+def problem41():
+    print("What is the largest n-digit pandigital prime?\n")
+
+    # For posterity, I've preserved my brute force solution in these comments.
+    # But in looking up what was wrong with my solution (see "NOTE FROM THE
+    # FUTURE" below), I learned that a very valuable heuristic I learned in 
+    # grade school actually prunes the scope really well. All numbers divisible
+    # by 3 are such that their digits equal a multiple of three. All pandigital 
+    # numbers with n-digits have the same sum of digits. Therefore:
+    # 
+    # 9+8+7+6+5+4+3+2+1 = 45    -> So none of them are prime
+    # 8+7+6+5+4+3+2+1 = 36      -> So none of them are prime
+    # 7+6+5+4+3+2+1 = 28        -> So one *could* be prime; so start with n=7.
+
+    # So in the worst case scenario, none of the 9-digit pandigital numbers are
+    # prime. In which case we'll need to check the 8-digit ones, and if none of
+    # those are prime, we'll need to check the 7 digit ones, etc...
+    n = 7
+    answer = 0
+    while n > 1: 
+        pandigitalSeed = ""
+        for i in range(n, 0, -1):
+            pandigitalSeed += str(i)
+        nDigitPandigitals = eu.permutations(pandigitalSeed)
+
+        # Now we want to search all of them to see which one is the largest 
+        # prime. I believe they're in reverse order, so lets iterate backwards:
+        #
+        # NOTE FROM THE FUTURE: 
+        # I'm a dumbass. They *are* in reverse order... so we need to iterate 
+        # forwards. 
+        for i in range(len(nDigitPandigitals)):
+            if eu.isPrime(int(nDigitPandigitals[i])):
+                answer = nDigitPandigitals[i]
+                break
+
+        if answer == 0:
+            n -= 1
+        else:
+           n = 0
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem41)
+
+def problem42():
+    print("How many words in the provided list are 'triangle-words'?\n")
+    answer = 0
+
+    # The triangle numbers are 1/2*n*(n+1). 
+    # The highest possible score a word will get is (max number of letters) * 
+    # 26. 
+    # So once we've read the word list, we can track it's max length, and then
+    # use that to cap our triangle numbers. 
+
+    # Input in the form of a file: 
+    words = []
+    with open("p042_words.txt") as f:
+        for line in f:
+            words = line.replace("\"","").split(",")
+    words.sort()
+
+    # Create Translation for letters to their score (1-indexed position in the 
+    # english alphabet) (Copied from problem 22. If we have to do it again, it's
+    # going into EulerUtils. 
+    lScoreOffset = 1 - ord("A")
+    def letterScore(letter):
+        return ord(letter) + lScoreOffset
+    def wordScore(word):
+        s = 0
+        for l in word:
+            s += letterScore(l)
+        return s
+    def triangleNum(n):
+        return n*(n+1) // 2
+
+    # Now we can process the words. 
+    maxLen = 0
+    scores = {}
+    for word in words:
+        # Track the biggest word
+        if len(word) > maxLen:
+            maxLen = len(word)
+        scores[word] = wordScore(word)
+
+    triangleNums = []
+    maxTriangleNum = maxLen * 26
+    n = 1
+    while triangleNum(n) < maxTriangleNum:
+        triangleNums.append(triangleNum(n))
+        n += 1
+
+    for word in words:
+        if scores[word] in triangleNums:
+            answer += 1
+    
+    print(f"The answer is {answer}\n")
+solutions.append(problem42)
+
+def problem43():
+    print("Find the sum of all 0 to 9 pandigital numbers with the property laid"
+          " out in the problem statement.\n")
+
+    # The rule: d2d3d4 is divisible by 2, d3d4d5 is divisible by 3, d4d5d6 is 
+    # divisible by 5, and then the subsequent dn+1,dn+2,dn+3 are divisible by
+    # 7, 11, 13, 17
+
+    answer = 0
+    divisibility = [2,3,5,7,11,13,17]
+    pandigitals = eu.permutations("9876543210")
+    #pandigitals = ["1406357289"]    # Test Case
+    for p in pandigitals:
+        i = 1
+        provenTrue = True
+        for d in divisibility:
+            num = int(p[i:i+3])
+            i += 1
+            if not eu.divides(d, num):
+                provenTrue = False
+                break
+        if provenTrue:
+            answer += int(p)
+
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem43)
+
+def problem44():
+    print("Find the pair of pentagonal numbers Pj and Pk, for which their sum a"
+          "nd difference are pentagonal and D = |Pk-Pj| is minimised, and provi"
+          "de the value of D.\n")
+    answer = 0
+
+    # Pentagonal numbers are generated by: Pn = n(3n-1)/2.
+    pentagonals = {}
+    for n in range(1,10000):
+        pentagonals[(3*n*n-n)//2] = True
+
+    print()
+    pentagonalsList = list(pentagonals.keys())
+    for i in range(len(pentagonals.keys())):
+        for j in range(i+1, len(pentagonals.keys())):
+            s = pentagonalsList[i] + pentagonalsList[j]
+            d = pentagonalsList[j] - pentagonalsList[i]
+            if pentagonals.get(s, False) and pentagonals.get(d, False):
+                answer = d
+                print(f"The answer is {answer}\n")
+                return
+solutions.append(problem44)
+
+def problem45():
+    print("Find the next number after 407555 that is a triangle, pentagonal and"
+          " a hexagonal number.\n")
+
+    pents = {}
+    hexes = {}
+    for n in range(1,100000):       # These bounds are guesses
+        pents[(n*3*n-n)//2] = True
+        hexes[(n*2*n-n)] = True
+
+    for n in range(286, 1000286):   # These bounds are guesses
+        t = (n*n+n)//2
+        if pents.get(t,False) and hexes.get(t,False):
+            print(f"The answer is {t}\n")
+            return
+solutions.append(problem45)
+
+def problem46():
+    print("What is the smallest odd composite that cannot be written as the sum"
+          "of a prime and twice a square?\n")
+
+    # Starting to notice a pattern in these problems lately. We're going to go
+    # with arbitrary bounds to get our squares list. The first 10000 squares 
+    # should give us room to find the number :) 
+    squares = []
+    for i in range(10000):
+        squares.append(i*i)
+
+    primseLookup = eu.primes
+    primesList = eu.primesList
+
+    oddComp = 33    # The last one given in the example
+    while True:
+        oddComp += 2
+        proven = True
+        if not primseLookup.get(oddComp, False):
+            # It *is* an odd composite. 
+            for p in primesList:
+                if p > oddComp:
+                    break
+                for s in squares:
+                    if 2 * s + p > oddComp:
+                        break
+                    if p + 2*s == oddComp:
+                        proven = False
+                        break
+                
+            if proven:
+                print(f"The answer is {oddComp}")
+                return
+solutions.append(problem46)
+
+def problem47():
+    print("What is the first of the first four consecutive numbers to have four"
+          " distinct prime factors?\n")
+
+    n = 4
+    consec = 0
+    primes = eu.primesList
+    while True:
+
+        if n == 644:
+            print("Holup")
+
+
+        alterable_n = n
+        primeFactors = []
+        for p in primes:
+            if p > alterable_n:
+                break
+            while eu.divides(p, alterable_n):
+                if p not in primeFactors:
+                    primeFactors.append(p)
+                alterable_n //= p
+
+        if len(primeFactors) == 4:
+            consec += 1
+        else:
+            consec = 0
+        if consec == 4:
+            print(f"The answer is {n-3}\n")
+            return
+        n += 1
+solutions.append(problem47)
+
+def problem48():
+    print("Find the last ten digits of the series 1^1+2^2...1000^1000\n")
+    s = 0
+    for i in range(1,1001):
+        s += i ** i
+    answer = str(s)[-10:]
+    print(f"The answer is {answer}\n")
+solutions.append(problem48)
+
+def problem49():
+    print("What 12-digit number is formed by concatenating the three terms in t"
+          "he sequence specified in the problem statement?\n")
+    answer = 0
+
+    def id(p):
+        r = [p[0], p[1], p[2], p[3]]
+        r.sort()
+        return int(r[0]) * 1000 + int(r[1]) * 100 + int(r[2]) * 10 + int(r[3])
+
+    # 4-digit primes, permutations of each other, in increasing order
+
+    fourdigitprimes = []
+    for p in eu.primesList:
+        if p < 1000:
+            continue
+        elif p > 9999:
+            break
+        fourdigitprimes.append(p)
+
+    for i in range(len(fourdigitprimes)):
+        pStarter = fourdigitprimes[i]
+        buddies = []
+        for j in range(i+1, len(fourdigitprimes)):
+            if id(str(pStarter)) == id(str(fourdigitprimes[j])):
+                buddies.append(fourdigitprimes[j])
+        if len(buddies) == 2:
+            if buddies[1] - buddies[0] == buddies[0] - pStarter:
+                print(f"The answer is {pStarter}{buddies[0]}{buddies[1]}")
+                return
+solutions.append(problem49)
+
+
+def problem50():
+    print("Which prime, below one-million, can be written as the sum of the mos"
+          "t consecutive primes? \n")
+    
+    bound = 1000000
+    answer = (0,0)
+    primes = eu.primes
+    primesList = eu.primesList
+    i = 0
+    for i in range(len(primesList)):
+        if primesList[i] > bound:
+            break
+        first = primesList[i]
+        runningSum = primesList[i]
+        for j in range(i+1, len(primesList)):
+            runningSum += primesList[j]
+            if runningSum > bound:
+                break
+            if eu.isPrime(runningSum) and j-i+1 > answer[1]:
+                answer = (runningSum, j-i+1)
+                print(f"Current Contender: {answer[0]} from {first} through the"
+                      f" next {answer[1]} primes.")
+
+    print(f"The answer is {answer}\n")
+solutions.append(problem50)
+
 
 #def problemX():
 #    print("Problem Statement Goes Here\n")
